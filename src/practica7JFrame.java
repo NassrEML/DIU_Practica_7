@@ -1,40 +1,125 @@
 
+import java.awt.HeadlessException;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 import javax.swing.JFileChooser;
 import javax.swing.JInternalFrame;
+import javax.swing.JOptionPane;
+import javax.swing.*;
 import javax.swing.event.InternalFrameAdapter;
 import javax.swing.event.InternalFrameEvent;
+import javax.swing.filechooser.FileFilter;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import org.opencv.core.Core;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
+import org.opencv.highgui.HighGui;
+import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.imgproc.Imgproc;
+
 
 /**
  *
- * @author Nassr Eddine Moussati Lamhamdi
- * @author Yousuf Boutahar El Maachi
+ * @author yusef
  */
 public class practica7JFrame extends javax.swing.JFrame {
 
     private DemoInternalFrame ifd;
 
+    private final JFileChooser fileChooser = new JFileChooser();
+    private final FileFilter jpgImg = new FileNameExtensionFilter("Imágenes *.jpg *.jpeg", "jpeg", "jpg");
+    private final FileFilter pngImg = new FileNameExtensionFilter("Imágenes *.png", "png");
+    private int threshold;
+    
+    
+    private Mat MatoriginalImage;
+    private BufferedImage originalImage;
+    private BufferedImage UmbralImage;
+
+    //static boolean ImagenNueva = false;// cuando abrimos una imagen nueva
+    
+    static {
+        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+    }
+    
     /**
      * Creates new form NewJFrame
      */
     public practica7JFrame() {
         initComponents();
+        setBounds(100, 0, 1300, 700);
     }
 
-    private void showDialog(MouseEvent e) {
-        
+
+    
+    /**
+     * Metodo que solo es invocado una vez y es el de la imagen principal
+     * @param img 
+     */
+    private void muestraVentanaPrincipal(BufferedImage img){
+
+        // reseteamos la posicion para la imagen principal
+        DemoInternalFrame.openFrameCount = 1;
+        DemoInternalFrame.posX = 0;
+        DemoInternalFrame.posY = 0;
+
+
         try{
-            this.ifd = new DemoInternalFrame("My image");
+            
+            this.ifd = new DemoInternalFrame("My image", img);
             
             this.ifd.addInternalFrameListener(new InternalFrameAdapter(){
+                @Override
                 public void internalFrameClosing(InternalFrameEvent e) {
-                // do something 
-                    System.out.print("Se cerró la ventana");
+                    // la cierrra si o si, hay que ver como hacer que no cierre la ventana
+                    // preguntar si al cerrar la ventana quiere guardarla
+
+                    // solo pregunta si hay algo que guardar sino, nada
+                    if(UmbralImage != null){
+                        if(closeWindow()); //System.exit(0); 
+                    }
+                                      
+                    limpiarEscritorio();
+                    // SALIR reseteando las variables 
+
+                }
+
+            });
+            
+            
+        }
+        catch (Exception ex) {
+            System.out.print(ex);           
+        }
+        this.ifd.setSize(500, 300);
+        Escritorio.add(this.ifd);
+        
+        // posicion de las imagenes unbralizadas 
+        DemoInternalFrame.posX = 500;
+
+    }
+    
+    
+    
+    /**
+     * Metodo que se invoca cada vez que se umbraliza 
+     * @param img 
+     */
+    private void muestraVentanaDeUmbralizado(BufferedImage img) {
+        try{
+            this.ifd = new DemoInternalFrame("My image", img);
+            this.ifd.addInternalFrameListener(new InternalFrameAdapter(){
+                @Override
+                public void internalFrameClosing(InternalFrameEvent e) {
+                    // preguntar si al cerrar la ventana quiere guardarla
+                     // la cierrra si o si, hay que ver como hacer que no cierre la ventana 
+                    if(closeWindow()); //System.exit(0);
                 }
             });
         }
@@ -42,7 +127,8 @@ public class practica7JFrame extends javax.swing.JFrame {
             System.out.print(ex);           
         }
         this.ifd.setSize(500, 300);
-        jDesktopPane1.add(this.ifd);
+        Escritorio.add(this.ifd);
+        
     }
 
     /**
@@ -57,14 +143,13 @@ public class practica7JFrame extends javax.swing.JFrame {
         jLabel1 = new javax.swing.JLabel();
         myDialog = new javax.swing.JDialog();
         jLabel2 = new javax.swing.JLabel();
-        jDesktopPane1 = new javax.swing.JDesktopPane();
-        myPanel = new practica7JPanel();
+        Escritorio = new javax.swing.JDesktopPane();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu1 = new javax.swing.JMenu();
         OpenFile = new javax.swing.JMenuItem();
+        saveImage = new javax.swing.JMenuItem();
         jMenu2 = new javax.swing.JMenu();
-        jMenu3 = new javax.swing.JMenu();
-        jMenuItem1 = new javax.swing.JMenuItem();
+        Umbralizar = new javax.swing.JMenuItem();
 
         jLabel1.setText("jLabel1");
 
@@ -96,22 +181,14 @@ public class practica7JFrame extends javax.swing.JFrame {
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setSize(new java.awt.Dimension(700, 500));
 
-        javax.swing.GroupLayout myPanelLayout = new javax.swing.GroupLayout(myPanel);
-        myPanel.setLayout(myPanelLayout);
-        myPanelLayout.setHorizontalGroup(
-            myPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 0, Short.MAX_VALUE)
-        );
-        myPanelLayout.setVerticalGroup(
-            myPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 0, Short.MAX_VALUE)
-        );
-
-        jDesktopPane1.add(myPanel);
-
         jMenu1.setText("File");
 
         OpenFile.setText("Open file...");
+        OpenFile.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                OpenFileMouseReleased(evt);
+            }
+        });
         OpenFile.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 OpenFileActionPerformed(evt);
@@ -119,27 +196,27 @@ public class practica7JFrame extends javax.swing.JFrame {
         });
         jMenu1.add(OpenFile);
 
+        saveImage.setText("Save");
+        saveImage.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                saveImageActionPerformed(evt);
+            }
+        });
+        jMenu1.add(saveImage);
+
         jMenuBar1.add(jMenu1);
 
         jMenu2.setText("Edit");
-        jMenuBar1.add(jMenu2);
 
-        jMenu3.setText("Images");
-
-        jMenuItem1.setText("Show Image");
-        jMenuItem1.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseReleased(java.awt.event.MouseEvent evt) {
-                jMenuItem1MouseReleased(evt);
-            }
-        });
-        jMenuItem1.addActionListener(new java.awt.event.ActionListener() {
+        Umbralizar.setText("umbralizar");
+        Umbralizar.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem1ActionPerformed(evt);
+                UmbralizarActionPerformed(evt);
             }
         });
-        jMenu3.add(jMenuItem1);
+        jMenu2.add(Umbralizar);
 
-        jMenuBar1.add(jMenu3);
+        jMenuBar1.add(jMenu2);
 
         setJMenuBar(jMenuBar1);
 
@@ -147,43 +224,152 @@ public class practica7JFrame extends javax.swing.JFrame {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jDesktopPane1)
+            .addComponent(Escritorio)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jDesktopPane1)
+            .addComponent(Escritorio)
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OpenFileActionPerformed
-        // TODO add your handling code here:
 
-        /**
-         * llamamos el método que permite cargar la ventana
-         */
-        JFileChooser file = new JFileChooser();
-        file.showOpenDialog(this);
-        /**
-         * abrimos el archivo seleccionado
-         */
-        File abre = file.getSelectedFile();
-        System.out.print(abre);
+        // preguntar si desea guardar antes de cambiar de imagen y perder todo
+        if(originalImage != null){
+            if(this.newPrincipalImagen()){
+                limpiarEscritorio();
+            }else{
+                return;
+            }
+        }
+        
+        fileChooser.setAcceptAllFileFilterUsed(false);
+        fileChooser.addChoosableFileFilter(pngImg);
+        fileChooser.addChoosableFileFilter(jpgImg);
+ 
+        try {
+            int status = fileChooser.showOpenDialog(null);
+            if(status == JFileChooser.APPROVE_OPTION){
+                File imagen = fileChooser.getSelectedFile();
+                Mat img = Imgcodecs.imread(imagen.getAbsolutePath());
+                this.MatoriginalImage = img;
+                this.originalImage = (BufferedImage) HighGui.toBufferedImage(img);
+                //originalImagePanel.setImage((BufferedImage) HighGui.toBufferedImage(img));
+                //modifiedImagePanel.clearBoard();
+                
+                this.muestraVentanaPrincipal(this.originalImage);// crea la ventana con la imagen original
 
+            }
+
+        } catch (HeadlessException e) {
+            System.out.println("No se pudo cargar la imagen: " + e);
+        }
 
     }//GEN-LAST:event_OpenFileActionPerformed
 
-    private void jMenuItem1MouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jMenuItem1MouseReleased
+    private void OpenFileMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_OpenFileMouseReleased
         // TODO add your handling code here:
-        this.showDialog(evt);
+    }//GEN-LAST:event_OpenFileMouseReleased
 
-    }//GEN-LAST:event_jMenuItem1MouseReleased
-
-    private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
+    private void UmbralizarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_UmbralizarActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jMenuItem1ActionPerformed
 
+        try{
+            if (MatoriginalImage == null){
+                JOptionPane.showMessageDialog(null, "Introduzca primero una imagen.", "ERROR", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            String res = JOptionPane.showInputDialog(null, "Valor del umbral", "Aplicar", JOptionPane.PLAIN_MESSAGE);
+            if (res == null) return;
+            threshold = Math.max(0, Integer.parseInt(res));
+            if (threshold < 0 || threshold > 255) throw new NumberFormatException();
+            System.out.println("El threshold es de: " + threshold);
+            if(MatoriginalImage != null){
+                this.UmbralImage = (BufferedImage) HighGui.toBufferedImage(thresholdImage(MatoriginalImage, threshold));
+                this.muestraVentanaDeUmbralizado(this.UmbralImage);// se crea la ventana en el escritorio
+            }
+        }catch(HeadlessException | NumberFormatException e){
+            JOptionPane.showMessageDialog(null, "Sólo se aceptan números enteros y se estén entre 0 y 255", "ERROR", JOptionPane.ERROR_MESSAGE);
+            System.out.println("Sólo se aceptan números enteros y se estén entre 0 y 255.");
+            System.out.println("Exception: "  + e);
+        }
+        
+        
+    }//GEN-LAST:event_UmbralizarActionPerformed
+
+    private void saveImageActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveImageActionPerformed
+        
+        if (UmbralImage == null) {
+            JOptionPane.showMessageDialog(null, "No hay nada que guardar", "ERROR", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        
+        /**
+         * ESTA MAL
+         * 
+         * se esta intentando guardar un bufferedImage (el ultimo creado) y eso no tiene sentido
+         * ya que el usuario a lo mejor decide guardar una anterior a la ultima y la variable
+         * bufferedImage UmbralImage solo perteneceria a la ultima umbralizada...
+         * 
+         * BRAIN EXPLOTION
+         */
+        if(fileChooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION){
+            try {
+                File imageName = fileChooser.getSelectedFile();
+                String extension = getExtension(imageName.getName());
+                if(!ImageIO.write(UmbralImage, "jpg", imageName)){
+                    JOptionPane.showMessageDialog(null, "No se ha podido guardar la imagen.",
+                            "Error al guardar la imagen", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (IOException ex) {
+                Logger.getLogger(practica7JFrame.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        } 
+        
+        
+    }//GEN-LAST:event_saveImageActionPerformed
+
+    private void limpiarEscritorio(){
+        MatoriginalImage = null;
+        originalImage = null;
+        UmbralImage = null;
+        Escritorio.removeAll();
+        Escritorio.repaint();  
+    }
+    
+    
+   private String getExtension (String path){
+        String extension = "";
+        int i = path.lastIndexOf('.');
+        if (i > 0) {
+            extension = path.substring(i+1);
+        }
+        return extension;
+    }
+   
+    
+    private Mat thresholdImage(Mat originalImage, int threshold){
+        Mat grayImage = new Mat(originalImage.rows(),originalImage.cols(),CvType.CV_8U);
+        Mat thresholdImage = new Mat(originalImage.rows(),originalImage.cols(),CvType.CV_8U);
+        Imgproc.cvtColor(originalImage,grayImage,Imgproc.COLOR_BGR2GRAY);
+        Imgproc.threshold(grayImage,thresholdImage,threshold,255,Imgproc.THRESH_BINARY);
+        return thresholdImage;
+    }  
+    
+    private boolean closeWindow() {
+        return (JOptionPane.showConfirmDialog(null, "Está a punto de salir de la aplicación, guarde su trabajo por favor.", 
+                "Salir", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION);
+    }
+    
+    private boolean newPrincipalImagen() {
+        return (JOptionPane.showConfirmDialog(null, "Desea salir sin guardar? ", 
+                "Salir Sin Guardar!!", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION);
+    }
+    
+    
     /**
      * @param args the command line arguments
      */
@@ -214,6 +400,7 @@ public class practica7JFrame extends javax.swing.JFrame {
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
+            @Override
             public void run() {
                 new practica7JFrame().setVisible(true);
             }
@@ -221,17 +408,16 @@ public class practica7JFrame extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JDesktopPane Escritorio;
     private javax.swing.JMenuItem OpenFile;
-    private javax.swing.JDesktopPane jDesktopPane1;
+    private javax.swing.JMenuItem Umbralizar;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenu jMenu2;
-    private javax.swing.JMenu jMenu3;
     private javax.swing.JMenuBar jMenuBar1;
-    private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JDialog myDialog;
-    private practica7JPanel myPanel;
+    private javax.swing.JMenuItem saveImage;
     // End of variables declaration//GEN-END:variables
 }
 
@@ -241,36 +427,34 @@ public class practica7JFrame extends javax.swing.JFrame {
 class DemoInternalFrame extends JInternalFrame {
 
     //Contador estático que aumenta cada vez que instanciamos una ventana.
-    static int openFrameCount = 1;
+    public static int openFrameCount = 1;
     //Posición de la ventana interna.
     static final int xOffset = 50, yOffset = 50;
-    static int posX = 0, posY = 0;
+    public static int posX = 0, posY = 0;
 
-    private BufferedImage img;
 
-    public DemoInternalFrame(String titulo) throws IOException {
+    
+    public DemoInternalFrame(String titulo, BufferedImage img) throws IOException {
         super(titulo + " " + String.valueOf(openFrameCount),
                 true, //Resizable
                 true, //Closable
                 true, //Maximizable
                 true);//Iconifiable
+        
 
         openFrameCount++;
-
         setVisible(true);
-        //Ponemos la localición de la ventana.
+        
         setLocation(posX, posY);
-        posX = xOffset * openFrameCount;
         posY = yOffset * openFrameCount;
 
         try {
-            img = ImageIO.read(new URL("https://www.dictando.com/wp-content/uploads/2018/07/dictado-mi-casa-A1.jpg"));
-            practica7JPanel panel = new practica7JPanel();
+            Lienzo panel =  new Lienzo();
             panel.setImage(img);
             add(panel);
             pack();
         } catch (Exception e) {
-            System.out.print(e);
+            System.out.print("ERROR");
         }
     }
 }
