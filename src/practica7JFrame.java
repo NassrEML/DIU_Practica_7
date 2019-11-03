@@ -1,17 +1,13 @@
-
 import java.awt.HeadlessException;
-import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 import javax.swing.JFileChooser;
 import javax.swing.JInternalFrame;
 import javax.swing.JOptionPane;
-import javax.swing.*;
 import javax.swing.event.InternalFrameAdapter;
 import javax.swing.event.InternalFrameEvent;
 import javax.swing.filechooser.FileFilter;
@@ -26,8 +22,10 @@ import org.opencv.imgproc.Imgproc;
 
 /**
  *
- * @author yusef
+ * @author Nassr Eddine Moussati Lamhamdi
+ * @author Yousuf Boutahar El Maachi
  */
+
 public class practica7JFrame extends javax.swing.JFrame {
 
     private DemoInternalFrame ifd;

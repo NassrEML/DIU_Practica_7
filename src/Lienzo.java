@@ -1,10 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
-
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -18,6 +11,7 @@ import javax.swing.JPanel;
  * @author Nassr Eddine Moussati Lamhamdi
  * @author Yousuf Boutahar El Maachi
  */
+
 public class Lienzo extends JPanel{
     
     private BufferedImage buffImage = null;
