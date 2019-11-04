@@ -291,7 +291,7 @@ public class practica7JFrame extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void openFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openFileActionPerformed
-        if (originalImage != null){
+        if (originalImage != null) {
             int desicion = JOptionPane.showConfirmDialog(null,
                     "¿Quiere guardar el trabajo realizado?", "Salir",
                     JOptionPane.YES_NO_OPTION);
@@ -360,32 +360,39 @@ public class practica7JFrame extends javax.swing.JFrame {
 
     private void saveImageActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveImageActionPerformed
 
-        if (UmbralImage == null) {
-            JOptionPane.showMessageDialog(null, "No hay nada que guardar", "ERROR", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        
         DemoInternalFrame dif = null;
-        if(originalImage != null){
+        if (originalImage != null) {
             dif = (DemoInternalFrame) desktop.getSelectedFrame();
         }
-        
-        if (dif.isPrincipal() == true){
-            JOptionPane.showMessageDialog(null, "No se puede guardar la imagen original. \nSeleccione una umbralizada.", 
-                        "Error", JOptionPane.ERROR_MESSAGE);
+
+        if (dif.isPrincipal() == true) {
+            JOptionPane.showMessageDialog(null, "No se puede guardar la imagen original. \nSeleccione una umbralizada.",
+                    "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        
+
         if (dif != null) {
-            if (!dif.isPrincipal()){
-                saveImage(dif);
-            }else{
-                JOptionPane.showMessageDialog(null, "No se puede guardar la imagen seleccionada.", 
+            if (!dif.isPrincipal()) {
+                if (dif.isSaved() == true) {
+                    int desicion = JOptionPane.showConfirmDialog(null,
+                            "La imagen ya esta guardada. \n¿Quiere volver a guardarla?", "Guardar imagen",
+                            JOptionPane.YES_NO_OPTION);
+                    if (desicion == JOptionPane.YES_OPTION) {
+                        saveImageOfDIF(dif);
+                        return;
+                    } else {
+                        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+                        return;
+                    }
+                }
+                saveImageOfDIF(dif);
+            } else {
+                JOptionPane.showMessageDialog(null, "No se puede guardar la imagen seleccionada.",
                         "Error", JOptionPane.ERROR_MESSAGE);
             }
-        }else{
-            JOptionPane.showMessageDialog(null, 
-                    "Debe seleccione la imagen a guardar.", 
+        } else {
+            JOptionPane.showMessageDialog(null,
+                    "Debe seleccione la imagen a guardar.",
                     "", JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_saveImageActionPerformed
@@ -552,11 +559,11 @@ public class practica7JFrame extends javax.swing.JFrame {
                 setTitle(title + " *");
                 return;
             }
-            this.title=title;
+            this.title = title;
             setTitle(title);
         }
-        
-        public String getTitleOfFrame(){
+
+        public String getTitleOfFrame() {
             return this.title;
         }
 
