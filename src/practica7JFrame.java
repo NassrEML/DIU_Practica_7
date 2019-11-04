@@ -123,6 +123,7 @@ public class practica7JFrame extends javax.swing.JFrame {
             if (buttonSelected == 0) {
                 if (saveImageOfDIF(ifd)) {
                     desktop.remove(ifd);
+                    nFrame--;
                     return true;
                 } else {
                     return false;
@@ -130,6 +131,7 @@ public class practica7JFrame extends javax.swing.JFrame {
             }
             if (buttonSelected == 1) {
                 desktop.remove(ifd);
+                nFrame--;
                 return true;
             }
             if (buttonSelected == 2) {
@@ -138,6 +140,7 @@ public class practica7JFrame extends javax.swing.JFrame {
 
         } else {
             desktop.remove(ifd);
+            nFrame--;
         }
         return true;
     }
@@ -216,11 +219,6 @@ public class practica7JFrame extends javax.swing.JFrame {
 
         openFile.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_O, java.awt.event.InputEvent.CTRL_MASK));
         openFile.setText("Cargar imagen...");
-        openFile.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseReleased(java.awt.event.MouseEvent evt) {
-                openFileMouseReleased(evt);
-            }
-        });
         openFile.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 openFileActionPerformed(evt);
@@ -291,14 +289,21 @@ public class practica7JFrame extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void openFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openFileActionPerformed
-        if (originalImage != null) {
+        if (originalImage != null && nFrame > 1) {
             int desicion = JOptionPane.showConfirmDialog(null,
                     "¿Quiere guardar el trabajo realizado?", "Salir",
-                    JOptionPane.YES_NO_OPTION);
-            if (desicion == JOptionPane.YES_OPTION) {
-                saveAll();
-            } else {
-                limpiarEscritorio();
+                    JOptionPane.YES_NO_CANCEL_OPTION);
+            switch (desicion) {
+                case JOptionPane.YES_OPTION:
+                    saveAll();
+                    break;
+                case JOptionPane.NO_OPTION:
+                    limpiarEscritorio();
+                    break;
+                case JOptionPane.CANCEL_OPTION:
+                    return;
+                default:
+                    break;
             }
         }
 
@@ -308,6 +313,7 @@ public class practica7JFrame extends javax.swing.JFrame {
 
         try {
             int status = fileChooser.showOpenDialog(null);
+            limpiarEscritorio();
             if (status == JFileChooser.APPROVE_OPTION) {
                 File imagen = fileChooser.getSelectedFile();
                 this.fileName = imagen.getAbsolutePath();
@@ -326,10 +332,6 @@ public class practica7JFrame extends javax.swing.JFrame {
         }
 
     }//GEN-LAST:event_openFileActionPerformed
-
-    private void openFileMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_openFileMouseReleased
-        // TODO add your handling code here:
-    }//GEN-LAST:event_openFileMouseReleased
 
     private void threshholdMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_threshholdMenuItemActionPerformed
 
@@ -365,7 +367,7 @@ public class practica7JFrame extends javax.swing.JFrame {
             dif = (DemoInternalFrame) desktop.getSelectedFrame();
         }
 
-        if (dif.isPrincipal() == true) {
+        if (dif != null && dif.isPrincipal() == true) {
             JOptionPane.showMessageDialog(null, "No se puede guardar la imagen original. \nSeleccione una umbralizada.",
                     "Error", JOptionPane.ERROR_MESSAGE);
             return;
@@ -392,7 +394,7 @@ public class practica7JFrame extends javax.swing.JFrame {
             }
         } else {
             JOptionPane.showMessageDialog(null,
-                    "Debe seleccione la imagen a guardar.",
+                    "Debe seleccionar la imagen a guardar.",
                     "", JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_saveImageActionPerformed
@@ -436,16 +438,15 @@ public class practica7JFrame extends javax.swing.JFrame {
     }
 
     private void closeWindow() {
-        if (saveAll()) {
-            int exitValue = JOptionPane.showConfirmDialog(null,
-                    "¿Está seguro de que desea salir de la aplicación?.", "Salir",
-                    JOptionPane.YES_NO_OPTION);
-            if (exitValue == JOptionPane.YES_OPTION) {
-                System.exit(0);
-            } else {
-                setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-            }
+        int exitValue = JOptionPane.showConfirmDialog(null,
+                "¿Está seguro de que desea salir de la aplicación?.", "Salir",
+                JOptionPane.YES_NO_OPTION);
+        if (exitValue == JOptionPane.YES_OPTION) {
+            if (saveAll()) System.exit(0);
+        } else {
+            setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         }
+
     }
 
     /**
