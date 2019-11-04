@@ -7,7 +7,6 @@ import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 
 /**
- *
  * @author Nassr Eddine Moussati Lamhamdi
  * @author Yousuf Boutahar El Maachi
  */

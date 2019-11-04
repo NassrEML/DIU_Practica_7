@@ -1,13 +1,14 @@
-
+import java.awt.Dimension;
 import java.awt.HeadlessException;
+import java.awt.Point;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.beans.PropertyVetoException;
 import java.io.File;
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -25,7 +26,6 @@ import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
 /**
- *
  * @author Nassr Eddine Moussati Lamhamdi
  * @author Yousuf Boutahar El Maachi
  */
@@ -44,7 +44,6 @@ public class practica7JFrame extends javax.swing.JFrame {
     private BufferedImage originalImage;
     private BufferedImage UmbralImage;
 
-    //static boolean ImagenNueva = false;// cuando abrimos una imagen nueva
     static {
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
     }
@@ -57,14 +56,55 @@ public class practica7JFrame extends javax.swing.JFrame {
         setBounds(100, 0, 1300, 700);
 
         disableUnnecessaryMenuItems(false);
-        setMinimumSize(getPreferredSize());
+        setMinimumSize(new Dimension(1000, 700));
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
                 closeWindow();
             }
         });
+        this.addComponentListener(onRezisable());
+    }
 
+    private ComponentAdapter onRezisable() {
+        return new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                Dimension dimension = desktop.getSize();
+
+                for (JInternalFrame ifd : desktop.getAllFrames()) {
+                    Point coordinate = ifd.getLocation();
+                    Dimension frameSize = ifd.getSize();
+
+                    Point center = checkCoordinates(dimension, coordinate, frameSize);
+
+                    if (center != null) {
+                        ifd.setLocation(center);
+                    }
+                }
+            }
+        };
+    }
+
+    private Point checkCoordinates(Dimension dimension, Point coordenadas, Dimension frameSize) {
+        if (coordenadas.getX() + frameSize.width > dimension.width) {
+
+            return new Point((int) coordenadas.getX() - 5, (int) coordenadas.getY());
+
+        } else if (coordenadas.getY() + frameSize.height > dimension.height) {
+
+            return new Point((int) coordenadas.getX(), (int) coordenadas.getY() - 5);
+
+        } else if (coordenadas.getX() < 0) {
+
+            return new Point((int) coordenadas.getX() + 5, (int) coordenadas.getY());
+
+        } else if (coordenadas.getY() < 0) {
+
+            return new Point((int) coordenadas.getX(), (int) coordenadas.getY() + 5);
+
+        }
+        return null;
     }
 
     /**
@@ -420,15 +460,6 @@ public class practica7JFrame extends javax.swing.JFrame {
         desktop.repaint();
     }
 
-    private String getExtension(String path) {
-        String extension = "";
-        int i = path.lastIndexOf('.');
-        if (i > 0) {
-            extension = path.substring(i + 1);
-        }
-        return extension;
-    }
-
     private Mat thresholdImage(Mat originalImage, int threshold) {
         Mat grayImage = new Mat(originalImage.rows(), originalImage.cols(), CvType.CV_8U);
         Mat thresholdImage = new Mat(originalImage.rows(), originalImage.cols(), CvType.CV_8U);
@@ -442,7 +473,9 @@ public class practica7JFrame extends javax.swing.JFrame {
                 "¿Está seguro de que desea salir de la aplicación?.", "Salir",
                 JOptionPane.YES_NO_OPTION);
         if (exitValue == JOptionPane.YES_OPTION) {
-            if (saveAll()) System.exit(0);
+            if (saveAll()) {
+                System.exit(0);
+            }
         } else {
             setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         }
